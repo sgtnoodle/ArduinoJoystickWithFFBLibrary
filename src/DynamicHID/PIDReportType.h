@@ -60,7 +60,7 @@ typedef struct //FFB: Set Effect Output Report
 	uint8_t	enableAxis; // bits: 0=X, 1=Y, 2=DirectionEnable
 	uint8_t	directionX;	// angle (0=0 .. 255=360deg)
 	uint8_t	directionY;	// angle (0=0 .. 255=360deg)
-	//	uint16_t	startDelay;	// 0..32767 ms
+	uint16_t	startDelay;	// 0..32767 ms
 } USB_FFBReport_SetEffect_Output_Data_t;
 
 typedef struct//FFB: Set Envelope Output Report
@@ -93,7 +93,7 @@ typedef struct//FFB: Set Periodic Output Report
 	uint16_t magnitude;
 	int16_t	offset;
 	uint16_t	phase;	// 0..255 (=0..359, exp-2)
-	uint16_t	period;	// 0..32767 ms
+	uint32_t	period;	// 0..32767 ms
 } USB_FFBReport_SetPeriodic_Output_Data_t;
 
 typedef struct//FFB: Set ConstantForce Output Report

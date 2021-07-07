@@ -2,6 +2,8 @@
 #ifndef _FFB_H
 #define _FFB_H
 
+#define ENABLE_START_DELAY 1
+
 static const uint8_t pidReportDescriptor[] PROGMEM= {
   // PID State Report
   0x05, 0x0F,          // USAGE_PAGE (Physical Interface)
@@ -143,6 +145,22 @@ static const uint8_t pidReportDescriptor[] PROGMEM= {
 	  0x66, 0x00, 0x00,     //          Unit (0)
 	0xC0,                 //        End Collection Datalink (Logical)
 
+#if ENABLE_START_DELAY
+	0x05,0x0F, // USAGE_PAGE (Physical Interface)
+	0x09,0xA7, // USAGE (Start Delay)
+	0x66,0x03,0x10, // UNIT (Eng Lin:Time)
+	0x55,0xFD, // UNIT_EXPONENT (-3)
+	0x15,0x00, // LOGICAL_MINIMUM (00)
+	0x26,0xFF,0x7F, // LOGICAL_MAXIMUM (7F FF)
+	0x35,0x00, // PHYSICAL_MINIMUM (00)
+	0x46,0xFF,0x7F, // PHYSICAL_MAXIMUM (7F FF)
+	0x75,0x10, // REPORT_SIZE (10)
+	0x95,0x01, // REPORT_COUNT (01)
+	0x91,0x02, // OUTPUT (Data,Var,Abs)
+	0x66,0x00,0x00, // UNIT (None)
+	0x55,0x00, // UNIT_EXPONENT (00)
+//	0xC0, // END COLLECTION ()
+#endif
 
 	0x05, 0x0F,           //    Usage Page (Physical Interface)
 	0x09, 0x58,           //      Usage (Type Specific Block Offset)
