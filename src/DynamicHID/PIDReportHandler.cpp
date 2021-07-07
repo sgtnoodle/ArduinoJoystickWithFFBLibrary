@@ -1,5 +1,8 @@
 #include "PIDReportHandler.h"
 
+#define DEBUG_PRINT(x)	Serial.print(x);
+#define DEBUG_PRINTLN(x)	Serial.println(x);
+
 PIDReportHandler::PIDReportHandler() 
 {
 	nextEID = 1;
@@ -169,14 +172,15 @@ void PIDReportHandler::SetEffect(USB_FFBReport_SetEffect_Output_Data_t* data)
 	effect->effectType = data->effectType;
 	effect->gain = data->gain;
 	effect->enableAxis = data->enableAxis;
-	//Serial.print("dX: ");
-	//Serial.print(effect->directionX);
-	//Serial.print(" dX: ");
-	//Serial.print(effect->directionY);
-	//Serial.print(" eT: ");
-	//Serial.print(effect->effectType);
-	//Serial.print(" eA: ");
-	//Serial.println(effect->enableAxis);
+	DEBUG_PRINT("dX: ");
+	DEBUG_PRINT(effect->directionX);
+	DEBUG_PRINT(" dX: ");
+	DEBUG_PRINT(effect->directionY);
+	DEBUG_PRINT(" eT: ");
+	DEBUG_PRINT(effect->effectType);
+	DEBUG_PRINT(" eA: ");
+	DEBUG_PRINTLN(effect->enableAxis);
+
 	//  effect->triggerRepeatInterval;
 	//  effect->samplePeriod;   // 0..32767 ms
 	//  effect->triggerButton;
@@ -207,6 +211,15 @@ void PIDReportHandler::SetPeriodic(USB_FFBReport_SetPeriodic_Output_Data_t* data
 	effect->offset = data->offset;
 	effect->phase = data->phase;
 	effect->period = data->period;
+
+	DEBUG_PRINT(" m: ");
+	DEBUG_PRINTLN(effect->magnitude);
+	DEBUG_PRINT(" o: ");
+	DEBUG_PRINTLN(effect->offset);
+	DEBUG_PRINT(" ph: ");
+	DEBUG_PRINTLN(effect->phase);
+	DEBUG_PRINT(" p: ");
+	DEBUG_PRINTLN(effect->period);
 }
 
 void PIDReportHandler::SetConstantForce(USB_FFBReport_SetConstantForce_Output_Data_t* data, volatile TEffectState* effect)
@@ -244,63 +257,68 @@ void PIDReportHandler::CreateNewEffect(USB_FFBReport_CreateNewEffect_Feature_Dat
 
 void PIDReportHandler::UppackUsbData(uint8_t* data, uint16_t len)
 {
-	//Serial.print("len:");
-	//Serial.println(len);
+	DEBUG_PRINT("len:");
+	DEBUG_PRINTLN(len);
+
 	uint8_t effectId = data[1]; // effectBlockIndex is always the second byte.
+
+	DEBUG_PRINT("id:");
+	DEBUG_PRINTLN(effectId);
+
 	switch (data[0])    // reportID
 	{
 	case 1:
-		//Serial.println("SetEffect");
+		DEBUG_PRINTLN("SetEffect");
 		SetEffect((USB_FFBReport_SetEffect_Output_Data_t*)data);
 		break;
 	case 2:
-		//Serial.println("SetEnvelop");
+		DEBUG_PRINTLN("SetEnvelop");
 		SetEnvelope((USB_FFBReport_SetEnvelope_Output_Data_t*)data, &g_EffectStates[effectId]);
 		break;
 	case 3:
-		//Serial.println("SetCondition");
+		DEBUG_PRINTLN("SetCondition");
 		SetCondition((USB_FFBReport_SetCondition_Output_Data_t*)data, &g_EffectStates[effectId]);
 		break;
 	case 4:
-		//Serial.println("SetPeriodic");
+		DEBUG_PRINTLN("SetPeriodic");
 		SetPeriodic((USB_FFBReport_SetPeriodic_Output_Data_t*)data, &g_EffectStates[effectId]);
 		break;
 	case 5:
-		//Serial.println("SetConstantForce");
+		DEBUG_PRINTLN("SetConstantForce");
 		SetConstantForce((USB_FFBReport_SetConstantForce_Output_Data_t*)data, &g_EffectStates[effectId]);
 		break;
 	case 6:
-		//Serial.println("SetRampForce");
+		DEBUG_PRINTLN("SetRampForce");
 		SetRampForce((USB_FFBReport_SetRampForce_Output_Data_t*)data, &g_EffectStates[effectId]);
 		break;
 	case 7:
-		//Serial.println("SetCustomForceData");
+		DEBUG_PRINTLN("SetCustomForceData");
 		SetCustomForceData((USB_FFBReport_SetCustomForceData_Output_Data_t*)data);
 		break;
 	case 8:
-		//Serial.println("SetDownloadForceSample");
+		DEBUG_PRINTLN("SetDownloadForceSample");
 		SetDownloadForceSample((USB_FFBReport_SetDownloadForceSample_Output_Data_t*)data);
 		break;
 	case 9:
 		break;
 	case 10:
-		//Serial.println("EffectOperation");
+		DEBUG_PRINTLN("EffectOperation");
 		EffectOperation((USB_FFBReport_EffectOperation_Output_Data_t*)data);
 		break;
 	case 11:
-		//Serial.println("BlockFree");
+		DEBUG_PRINTLN("BlockFree");
 		BlockFree((USB_FFBReport_BlockFree_Output_Data_t*)data);
 		break;
 	case 12:
-		//Serial.println("DeviceControl");
+		DEBUG_PRINTLN("DeviceControl");
 		DeviceControl((USB_FFBReport_DeviceControl_Output_Data_t*)data);
 		break;
 	case 13:
-		//Serial.println("DeviceGain");
+		DEBUG_PRINTLN("DeviceGain");
 		DeviceGain((USB_FFBReport_DeviceGain_Output_Data_t*)data);
 		break;
 	case 14:
-		//Serial.println("SetCustomForce");
+		DEBUG_PRINTLN("SetCustomForce");
 		SetCustomForce((USB_FFBReport_SetCustomForce_Output_Data_t*)data);
 		break;
 	default:
