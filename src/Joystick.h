@@ -189,6 +189,8 @@ public:
 
 	void begin(bool initAutoSendState = true);
 	void end();
+
+	void EnableAutoCenter(int16_t coefficient, int16_t saturation);
 	
 	// Set Range Functions
 	inline void setXAxisRange(int16_t minimum, int16_t maximum)

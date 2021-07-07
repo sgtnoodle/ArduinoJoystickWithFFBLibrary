@@ -8,7 +8,10 @@ public:
 	PIDReportHandler();
 	~PIDReportHandler();
 	// Effect management
-	volatile uint8_t nextEID;  // FFP effect indexes starts from 1
+	// FFP effect indexes start from 1.
+	// The 0th effect is used to remember default effect parameters, and is copied
+	// to index 1 after freeing all effects.
+	volatile uint8_t nextEID;
 	volatile TEffectState  g_EffectStates[MAX_EFFECTS + 1];
 	volatile uint8_t devicePaused;
 	//variables for storing previous values
@@ -19,6 +22,13 @@ public:
 	volatile USB_FFBReport_PIDBlockLoad_Feature_Data_t pidBlockLoad;
 	volatile USB_FFBReport_PIDPool_Feature_Data_t pidPoolReport;
 	volatile USB_FFBReport_DeviceGain_Output_Data_t deviceGain;
+
+	// Enables a default effect with the given effect parameters.
+	// This function must be called during initialization.
+	void EnableDefaultEffect(const TEffectState &effect);
+
+	// Debug prints the effect at the specified id.
+	void PrintEffect(uint8_t id);
 
 	//ffb state structures
 	uint8_t GetNextFreeEffect(void);

@@ -7,11 +7,84 @@ PIDReportHandler::PIDReportHandler()
 {
 	nextEID = 1;
 	devicePaused = 0;
+	memset(&g_EffectStates, 0, sizeof(g_EffectStates));
 }
 
 PIDReportHandler::~PIDReportHandler() 
 {
 	FreeAllEffects();
+}
+
+void PIDReportHandler::EnableDefaultEffect(const TEffectState &effect)
+{
+	memcpy(&g_EffectStates[0], &effect, sizeof(TEffectState));
+	const uint8_t id = GetNextFreeEffect();
+	memcpy(&g_EffectStates[id], &g_EffectStates[0], sizeof(TEffectState));
+	if (id != 1)
+	{
+		DEBUG_PRINT("nextEID != 1: ");
+		DEBUG_PRINTLN(id);
+	}
+	StartEffect(id);
+	DEBUG_PRINT("Enabled default effect: ");
+	DEBUG_PRINTLN(g_EffectStates[id].duration);
+}
+
+void PIDReportHandler::PrintEffect(uint8_t id)
+{
+	DEBUG_PRINT("Effect ");
+	DEBUG_PRINT(id);
+	DEBUG_PRINTLN(":");
+	DEBUG_PRINT("  state ");
+	DEBUG_PRINTLN(g_EffectStates[id].state);
+	DEBUG_PRINT("  effectType ");
+	DEBUG_PRINTLN(g_EffectStates[id].effectType);
+	DEBUG_PRINT("  offset ");
+	DEBUG_PRINTLN(g_EffectStates[id].offset);
+	DEBUG_PRINT("  gain ");
+	DEBUG_PRINTLN(g_EffectStates[id].gain);
+	DEBUG_PRINT("  attackLevel ");
+	DEBUG_PRINTLN(g_EffectStates[id].attackLevel);
+	DEBUG_PRINT("  fadeLevel ");
+	DEBUG_PRINTLN(g_EffectStates[id].fadeLevel);
+	DEBUG_PRINT("  magnitude ");
+	DEBUG_PRINTLN(g_EffectStates[id].magnitude);
+	DEBUG_PRINT("  enableAxis ");
+	DEBUG_PRINTLN(g_EffectStates[id].enableAxis);
+	DEBUG_PRINT("   directionX ");
+	DEBUG_PRINTLN(g_EffectStates[id].directionX);
+	DEBUG_PRINT("  directionY ");
+	DEBUG_PRINTLN(g_EffectStates[id].directionY);
+	DEBUG_PRINT("  phase ");
+	DEBUG_PRINTLN(g_EffectStates[id].phase);
+	DEBUG_PRINT("  startMagnitude ");
+	DEBUG_PRINTLN(g_EffectStates[id].startMagnitude);
+	DEBUG_PRINT("  endMagnitude ");
+	DEBUG_PRINTLN(g_EffectStates[id].endMagnitude);
+	DEBUG_PRINT("  period ");
+	DEBUG_PRINTLN(g_EffectStates[id].period);
+	DEBUG_PRINT("  duration ");
+	DEBUG_PRINTLN(g_EffectStates[id].duration);
+	DEBUG_PRINT("  fadeTime ");
+	DEBUG_PRINTLN(g_EffectStates[id].fadeTime);
+	DEBUG_PRINT("  attackTime ");
+	DEBUG_PRINTLN(g_EffectStates[id].attackTime);
+	DEBUG_PRINT("  elapsedTime ");
+	DEBUG_PRINTLN(g_EffectStates[id].elapsedTime);
+//	DEBUG_PRINT("startTime ");
+//	DEBUG_PRINTLN(g_EffectStates[id].startTime);
+	DEBUG_PRINT("  cpOffset ");
+	DEBUG_PRINTLN(g_EffectStates[id].conditions[0].cpOffset);
+	DEBUG_PRINT("  positiveCoefficient ");
+	DEBUG_PRINTLN(g_EffectStates[id].conditions[0].positiveCoefficient);
+	DEBUG_PRINT("  negativeCoefficient ");
+	DEBUG_PRINTLN(g_EffectStates[id].conditions[0].negativeCoefficient);
+	DEBUG_PRINT("  positiveSaturation ");
+	DEBUG_PRINTLN(g_EffectStates[id].conditions[0].positiveSaturation);
+	DEBUG_PRINT("  negativeSaturation ");
+	DEBUG_PRINTLN(g_EffectStates[id].conditions[0].negativeSaturation);
+	DEBUG_PRINT("  deadBand ");
+	DEBUG_PRINTLN(g_EffectStates[id].conditions[0].deadBand);
 }
 
 uint8_t PIDReportHandler::GetNextFreeEffect(void)
@@ -45,6 +118,7 @@ void PIDReportHandler::StartEffect(uint8_t id)
 		return;
 	g_EffectStates[id].state = MEFFECTSTATE_PLAYING;
 	g_EffectStates[id].elapsedTime = 0;
+	// TODO: Casting 32 to 64 bit is probably not right?
 	g_EffectStates[id].startTime = (uint64_t)millis();
 }
 
@@ -52,8 +126,7 @@ void PIDReportHandler::StopEffect(uint8_t id)
 {
 	if (id > MAX_EFFECTS)
 		return;
-	g_EffectStates[id].state &= ~MEFFECTSTATE_PLAYING;
-	pidBlockLoad.ramPoolAvailable += SIZE_EFFECT;
+	g_EffectStates[id].state = MEFFECTSTATE_ALLOCATED;
 }
 
 void PIDReportHandler::FreeEffect(uint8_t id)
@@ -63,13 +136,25 @@ void PIDReportHandler::FreeEffect(uint8_t id)
 	g_EffectStates[id].state = 0;
 	if (id < nextEID)
 		nextEID = id;
+	pidBlockLoad.ramPoolAvailable += SIZE_EFFECT;
 }
 
 void PIDReportHandler::FreeAllEffects(void)
 {
 	nextEID = 1;
-	memset((void*)& g_EffectStates, 0, sizeof(g_EffectStates));
+	for (uint8_t i = 1; i < MAX_EFFECTS + 1; ++i)
+	{
+		memset(&g_EffectStates[i], 0, sizeof(TEffectState));
+	}
+	if (g_EffectStates[0].state != MEFFECTSTATE_FREE)
+	{
+		// Default effect is enabled.
+		memcpy(&g_EffectStates[1], &g_EffectStates[0], sizeof(TEffectState));
+		nextEID += 1;
+		StartEffect(1);
+	}
 	pidBlockLoad.ramPoolAvailable = MEMORY_SIZE;
+	DEBUG_PRINTLN("Freed All Effects");
 }
 
 void PIDReportHandler::EffectOperation(USB_FFBReport_EffectOperation_Output_Data_t* data)
@@ -196,13 +281,13 @@ void PIDReportHandler::SetEnvelope(USB_FFBReport_SetEnvelope_Output_Data_t* data
 
 void PIDReportHandler::SetCondition(USB_FFBReport_SetCondition_Output_Data_t* data, volatile TEffectState* effect)
 {
-        uint8_t axis = data->parameterBlockOffset; 
-        effect->conditions[axis].cpOffset = data->cpOffset;
-        effect->conditions[axis].positiveCoefficient = data->positiveCoefficient;
-        effect->conditions[axis].negativeCoefficient = data->negativeCoefficient;
-        effect->conditions[axis].positiveSaturation = data->positiveSaturation;
-        effect->conditions[axis].negativeSaturation = data->negativeSaturation;
-        effect->conditions[axis].deadBand = data->deadBand;
+	uint8_t axis = data->parameterBlockOffset; 
+	effect->conditions[axis].cpOffset = data->cpOffset;
+	effect->conditions[axis].positiveCoefficient = data->positiveCoefficient;
+	effect->conditions[axis].negativeCoefficient = data->negativeCoefficient;
+	effect->conditions[axis].positiveSaturation = data->positiveSaturation;
+	effect->conditions[axis].negativeSaturation = data->negativeSaturation;
+	effect->conditions[axis].deadBand = data->deadBand;
 }
 
 void PIDReportHandler::SetPeriodic(USB_FFBReport_SetPeriodic_Output_Data_t* data, volatile TEffectState* effect)

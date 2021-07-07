@@ -485,6 +485,22 @@ void Joystick_::begin(bool initAutoSendState)
 	sendState();
 }
 
+void Joystick_::EnableAutoCenter(int16_t coefficient, int16_t saturation)
+{
+	TEffectState effect;
+	effect.effectType = USB_EFFECT_SPRING;
+	effect.gain = 255;
+	effect.enableAxis = X_AXIS_ENABLE;  // TODO: Both axes?
+	effect.conditions[0].cpOffset = 0;
+	effect.conditions[0].positiveCoefficient = coefficient;
+	effect.conditions[0].negativeCoefficient = coefficient;
+	effect.conditions[0].positiveSaturation = saturation;
+	effect.conditions[0].negativeSaturation = saturation;
+	effect.conditions[0].deadBand = 0;
+	effect.duration = 0;
+	DynamicHID().pidReportHandler.EnableDefaultEffect(effect);
+}
+
 void Joystick_::getForce(int32_t* forces) {
 	DynamicHID().RecvfromUsb();
 	forceCalculator(forces);
@@ -560,27 +576,27 @@ int32_t Joystick_::getEffectForce(volatile TEffectState& effect,Gains _gains,Eff
 void Joystick_::forceCalculator(int32_t* forces) {
     forces[0] = 0;
     forces[1] = 0;
-        int32_t force = 0;
-	    for (int id = 0; id < MAX_EFFECTS; id++) {
-	    	volatile TEffectState& effect = DynamicHID().pidReportHandler.g_EffectStates[id];
-	    	if ((effect.state == MEFFECTSTATE_PLAYING) &&
-	    		((effect.elapsedTime <= effect.duration) ||
-	    		(effect.duration == USB_DURATION_INFINITE)) &&
-	    		!DynamicHID().pidReportHandler.devicePaused)
-	    	{
-				if (effect.enableAxis == DIRECTION_ENABLE
-                    || effect.enableAxis & X_AXIS_ENABLE)
-				{
-					forces[0] += (int32_t)(getEffectForce(effect,m_gains[0], m_effect_params[0], 0));
-				}
-				if (effect.enableAxis == DIRECTION_ENABLE
-                    || effect.enableAxis & Y_AXIS_ENABLE)
-				{
-					forces[1] += (int32_t)(getEffectForce(effect,m_gains[1], m_effect_params[1], 1));
-				}
+	int32_t force = 0;
+	for (int id = 1; id < MAX_EFFECTS; id++) {
+		volatile TEffectState& effect = DynamicHID().pidReportHandler.g_EffectStates[id];
 
-	    	}
-	    }
+		if ((effect.state == MEFFECTSTATE_PLAYING) &&
+			(effect.duration == 0 || effect.duration == USB_DURATION_INFINITE || effect.elapsedTime <= effect.duration) &&
+			!DynamicHID().pidReportHandler.devicePaused)
+		{
+			if (effect.enableAxis == DIRECTION_ENABLE
+				|| effect.enableAxis & X_AXIS_ENABLE)
+			{
+				forces[0] += (int32_t)(getEffectForce(effect,m_gains[0], m_effect_params[0], 0));
+			}
+			if (effect.enableAxis == DIRECTION_ENABLE
+				|| effect.enableAxis & Y_AXIS_ENABLE)
+			{
+				forces[1] += (int32_t)(getEffectForce(effect,m_gains[1], m_effect_params[1], 1));
+			}
+
+		}
+	}
 	forces[0] = (int32_t)((float)1.00 * forces[0] * m_gains[0].totalGain / 10000); // each effect gain * total effect gain = 10000
 	forces[1] = (int32_t)((float)1.00 * forces[1] * m_gains[1].totalGain / 10000); // each effect gain * total effect gain = 10000
 	forces[0] = constrain(forces[0], -255, 255);
