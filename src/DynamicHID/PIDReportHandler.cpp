@@ -1,7 +1,11 @@
 #include "PIDReportHandler.h"
-
-#define DEBUG_PRINT(x)	Serial.print(x);
-#define DEBUG_PRINTLN(x)	Serial.println(x);
+#if 1
+#define DEBUG_PRINT(x)	Serial.print(x)
+#define DEBUG_PRINTLN(x)	Serial.println(x)
+#else
+#define DEBUG_PRINT(x)
+#define DEBUG_PRINTLN(x)
+#endif
 
 PIDReportHandler::PIDReportHandler() 
 {
@@ -371,6 +375,7 @@ void PIDReportHandler::UppackUsbData(uint8_t* data, uint16_t len)
 	case 5:
 		DEBUG_PRINTLN("SetConstantForce");
 		SetConstantForce((USB_FFBReport_SetConstantForce_Output_Data_t*)data, &g_EffectStates[effectId]);
+		PrintEffect(effectId);
 		break;
 	case 6:
 		DEBUG_PRINTLN("SetRampForce");
