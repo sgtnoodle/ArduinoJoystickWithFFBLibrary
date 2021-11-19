@@ -269,10 +269,6 @@ void PIDReportHandler::SetEffect(USB_FFBReport_SetEffect_Output_Data_t* data)
 	DEBUG_PRINT(effect->effectType);
 	DEBUG_PRINT(" eA: ");
 	DEBUG_PRINTLN(effect->enableAxis);
-
-	//  effect->triggerRepeatInterval;
-	//  effect->samplePeriod;   // 0..32767 ms
-	//  effect->triggerButton;
 }
 
 void PIDReportHandler::SetEnvelope(USB_FFBReport_SetEnvelope_Output_Data_t* data, volatile TEffectState* effect)
@@ -286,12 +282,13 @@ void PIDReportHandler::SetEnvelope(USB_FFBReport_SetEnvelope_Output_Data_t* data
 void PIDReportHandler::SetCondition(USB_FFBReport_SetCondition_Output_Data_t* data, volatile TEffectState* effect)
 {
 	uint8_t axis = data->parameterBlockOffset; 
-	effect->conditions[axis].cpOffset = data->cpOffset;
-	effect->conditions[axis].positiveCoefficient = data->positiveCoefficient;
-	effect->conditions[axis].negativeCoefficient = data->negativeCoefficient;
-	effect->conditions[axis].positiveSaturation = data->positiveSaturation;
-	effect->conditions[axis].negativeSaturation = data->negativeSaturation;
-	effect->conditions[axis].deadBand = data->deadBand;
+    effect->conditions[axis].cpOffset = data->cpOffset;
+    effect->conditions[axis].positiveCoefficient = data->positiveCoefficient;
+    effect->conditions[axis].negativeCoefficient = data->negativeCoefficient;
+    effect->conditions[axis].positiveSaturation = data->positiveSaturation;
+    effect->conditions[axis].negativeSaturation = data->negativeSaturation;
+    effect->conditions[axis].deadBand = data->deadBand;
+	effect->conditionBlocksCount++;
 }
 
 void PIDReportHandler::SetPeriodic(USB_FFBReport_SetPeriodic_Output_Data_t* data, volatile TEffectState* effect)
